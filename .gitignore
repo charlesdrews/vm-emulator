@@ -1,0 +1,10 @@
+# ignore input files
+*.vm
+# and PDFs
+*.pdf
+# and the reference vm & its license
+refvm
+# and .swp files
+*.swp
+# and my executables
+vm
