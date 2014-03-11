@@ -441,17 +441,80 @@ int main(int argc, char *argv[]) {
     int i;
     address_list_t *list;
     int dbb_exec_count2 = 0;
+    
     // iterate through the table array
     for (i = 0; i < DBB_hashtab->size; i++) {
         list = DBB_hashtab->table[i];
+        
         // iterate through linked list in table[i] starting w/ head
         while (list != NULL) {
             printf("line_num %d's frequency: %d\n", list->address,
                    list->value);
             dbb_exec_count2 = dbb_exec_count2 + list->value;
+            
+            // reset fp and read input again to print inst. & args
+            rewind(fp); 
+            linenum = 0;
+            startline = list->address;
+            while (fgets(line, MAXLINE, fp) != NULL) {
+                if (++linenum >= startline) {
+                    // reset curr_inst
+                    memset(curr_inst.inst, '\0', 5);
+                    memset(curr_inst.arg0, '\0', MAXLINE);
+                    memset(curr_inst.arg1, '\0', 50);
+            
+                    // tokenize the new line
+                    token = strtok(line, " ,\t\n");
+
+                    // iterate through the tokens of the current line
+                    while (token != NULL) {	
+                        // refill curr_inst with new line
+                        if (token[0] == '#') {
+                            break; // if comment, skip rest of line
+                        } else if (token[strlen(token) - 1] == ':') {
+                            // if label do nothing, move to next token
+                        } else if (curr_inst.inst[0] == '\0') {
+                            // populate instruction
+                             snprintf(curr_inst.inst, 5, "%s", token);
+                         } else if (curr_inst.arg0[0] == '\0') {
+                            // populate arg0
+                            snprintf(curr_inst.arg0, MAXLINE, "%s", token);
+                        } else {
+                            // populate arg1
+                            snprintf(curr_inst.arg1, 50, "%s", token);
+                        }
+                        token = strtok(NULL, " ,\t\n");	// move to next token
+                    } // end while loop through tokens of current line
+                    
+                    if (curr_inst.inst[0] != '\0') {
+                        if (curr_inst.arg1[0] != '\0')
+                            printf("%s %s, %s\n", curr_inst.inst,
+                                   curr_inst.arg0, curr_inst.arg1);
+                        else
+                            printf("%s %s\n", curr_inst.inst,
+                                   curr_inst.arg0);
+                    }
+
+                    if (strcmp(curr_inst.inst, "call") == 0 ||
+                        strcmp(curr_inst.inst, "ret") == 0 ||
+                        strcmp(curr_inst.inst, "jmp") == 0 ||
+                        strcmp(curr_inst.inst, "je") == 0 ||
+                        strcmp(curr_inst.inst, "jne") == 0 ||
+                        strcmp(curr_inst.inst, "jg") == 0 ||
+                        strcmp(curr_inst.inst, "jge") == 0 ||
+                        strcmp(curr_inst.inst, "jl") == 0 ||
+                        strcmp(curr_inst.inst, "jle") == 0) {
+                        rewind(fp); 
+                        linenum = 0;
+                        break;
+                    }
+
+                } // end if linenum >= startline
+            } // end while loop through lines w/ fgets
             list = list->next;
-        }
-    }
+        } // end iteration through linked list
+    } // end iteration through hashtable array
+
     printf("dbb_exec_count:  %d\n", dbb_exec_count);
     printf("dbb_exec_count2: %d\n", dbb_exec_count2);
 
