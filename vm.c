@@ -1,5 +1,5 @@
 /* Charles Drews (csd305@nyu.edu, N11539474)
- * Homework 3
+ * Homework 3 (Lab 2)
  * Virtual Machines: Concepts and Applications , CSCI-GA.3033-015, Spring 2014
  */
 
@@ -226,8 +226,17 @@ int main(int argc, char *argv[]) {
     // read input by iterating through lines of input file
     linenum = 0;
     struct code_line curr_inst;
+    int jump_flag = 0; // 1 = the previous inst. was a jump or call
     while (fgets(line, MAXLINE, fp) != NULL) {
         if (++linenum >= startline) {
+
+            // if previous inst. was a jump or call, need to 
+            // log the current inst. as the head of a DBB
+            if (jump_flag) {
+                printf("jumped to line %d\n", linenum);
+            }
+            jump_flag = 0; // reset
+
             // reset curr_inst
             memset(curr_inst.inst, '\0', 5);
             memset(curr_inst.arg0, '\0', MAXLINE);
@@ -278,6 +287,7 @@ int main(int argc, char *argv[]) {
                 // do anything until it hits the new startline
                 rewind(fp);
                 linenum = 0;
+                jump_flag = 1;
             }
             else if (strcmp(curr_inst.inst, "ret") == 0) {
                 startline = ret(stack);
@@ -285,6 +295,7 @@ int main(int argc, char *argv[]) {
                 // do anything until it hits the new startline
                 rewind(fp); 
                 linenum = 0;
+                jump_flag = 1;
             }
             else if (strcmp(curr_inst.inst, "inc") == 0)
                 arith_inc(curr_inst.arg0, address_hashtab, registers);
@@ -334,48 +345,73 @@ int main(int argc, char *argv[]) {
                 // do anything until it hits the new startline
                 rewind(fp);
                 linenum = 0;
+                jump_flag = 1;
             }
-            else if (strcmp(curr_inst.inst, "je") == 0
-                     && registers->flags == 0) { // jump if cmp yielded 0
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
-                                label_hashtab, registers);
-                rewind(fp);
-                linenum = 0;
+            else if (strcmp(curr_inst.inst, "je") == 0) {
+                if (registers->flags == 0) {
+                    // jump if cmp yielded 0
+                    startline = jmp(curr_inst.arg0, linenum + 1,
+                                    address_hashtab, label_hashtab,
+                                    registers);
+                    rewind(fp);
+                    linenum = 0;
+                }
+                jump_flag = 1; // set jump flag even if jump didn't happen
             }
-            else if (strcmp(curr_inst.inst, "jne") == 0
-                     && registers->flags != 0) { // jump if cmp did not yield 0
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
-                                label_hashtab, registers);
-                rewind(fp);
-                linenum = 0;
+            else if (strcmp(curr_inst.inst, "jne") == 0) {
+                if (registers->flags != 0) {
+                    // jump if cmp did not yield 0
+                    startline = jmp(curr_inst.arg0, linenum + 1,
+                                    address_hashtab, label_hashtab,
+                                    registers);
+                    rewind(fp);
+                    linenum = 0;
+                }
+                jump_flag = 1; // set jump flag even if jump didn't happen
             }
-            else if (strcmp(curr_inst.inst, "jg") == 0
-                     && registers->flags > 0) { // jump if cmp yielded >0
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
-                                label_hashtab, registers);
-                rewind(fp);
-                linenum = 0;
+            else if (strcmp(curr_inst.inst, "jg") == 0) {
+                if (registers->flags > 0) {
+                    // jump if cmp yielded >0
+                    startline = jmp(curr_inst.arg0, linenum + 1,
+                                    address_hashtab, label_hashtab,
+                                    registers);
+                    rewind(fp);
+                    linenum = 0;
+                }
+                jump_flag = 1; // set jump flag even if jump didn't happen
             }
-            else if (strcmp(curr_inst.inst, "jge") == 0
-                     && registers->flags >= 0) { // jump if cmp yielded >=0
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
-                                label_hashtab, registers);
-                rewind(fp);
-                linenum = 0;
+            else if (strcmp(curr_inst.inst, "jge") == 0) {
+                if (registers->flags >= 0) {
+                    // jump if cmp yielded >=0
+                    startline = jmp(curr_inst.arg0, linenum + 1,
+                                    address_hashtab, label_hashtab,
+                                    registers);
+                    rewind(fp);
+                    linenum = 0;
+                }
+                jump_flag = 1; // set jump flag even if jump didn't happen
             }
-            else if (strcmp(curr_inst.inst, "jl") == 0
-                     && registers->flags < 0) { // jump if cmp yielded <0
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
-                                label_hashtab, registers);
-                rewind(fp);
-                linenum = 0;
+            else if (strcmp(curr_inst.inst, "jl") == 0) {
+                if (registers->flags < 0) {
+                    // jump if cmp yielded <0
+                    startline = jmp(curr_inst.arg0, linenum + 1,
+                                    address_hashtab, label_hashtab,
+                                    registers);
+                    rewind(fp);
+                    linenum = 0;
+                }
+                jump_flag = 1; // set jump flag even if jump didn't happen
             }
-            else if (strcmp(curr_inst.inst, "jle") == 0
-                     && registers->flags <= 0) { // jump if cmp yielded <=0
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
-                                label_hashtab, registers);
-                rewind(fp);
-                linenum = 0;
+            else if (strcmp(curr_inst.inst, "jle") == 0) {
+                if (registers->flags <= 0) {
+                    // jump if cmp yielded <=0
+                    startline = jmp(curr_inst.arg0, linenum + 1,
+                                    address_hashtab, label_hashtab,
+                                    registers);
+                    rewind(fp);
+                    linenum = 0;
+                }
+                jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "prn") == 0)
                 prn(curr_inst.arg0, address_hashtab, registers);
@@ -739,7 +775,7 @@ int *get_register_pointer(char *reg, registers_t *r) {
     else if (strcmp(reg, "flags") == 0) return &r->flags;
     else if (strcmp(reg, "remainder") == 0) return &r->remreg;
     else return 0;
-};
+}
 
 int get_arg_value(char *arg, address_hashtab_t *ht,
                   registers_t *r) {
