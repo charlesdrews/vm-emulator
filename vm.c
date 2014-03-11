@@ -254,6 +254,7 @@ int main(int argc, char *argv[]) {
             }
             jump_flag = 0; // reset
 
+
             // reset curr_inst
             memset(curr_inst.inst, '\0', 5);
             memset(curr_inst.arg0, '\0', MAXLINE);
@@ -464,7 +465,9 @@ int main(int argc, char *argv[]) {
             line_num = 0;
             start_line = list->address;
             while (fgets(line, MAXLINE, ifp) != NULL) {
+
                 if (++line_num >= start_line) {
+
                     // reset curr_inst
                     memset(curr_inst.inst, '\0', 5);
                     memset(curr_inst.arg0, '\0', MAXLINE);

@@ -6,4 +6,5 @@ My source code is in vm.c and can be compiled simply with "gcc vm.c -o vm".
 
 The usage is "./vm inputfile.vm".
 
-Profiling statistic will be written to profile.txt, which will be overwritten if it already exists.
+Profiling statistics will be written to profile.txt,
+which will be overwritten if it already exists.
