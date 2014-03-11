@@ -1,0 +1,5 @@
+Check the Git tags to find the version that was handed in on 3/4/14.
+It can be found on the master branch with tag v1.0.
+
+There are later commits that incorporate/fix features that
+were missing in v1.0 (not good, I know).

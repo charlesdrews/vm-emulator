@@ -1,24 +1,41 @@
-line_num 1's frequency: 1
-mov eax, 1
-mov ebx, 0
-add eax, ebx
-add ebx, eax
-prn eax
+55
+push eax
+push ecx
+push ebp
+mov ebp, esp
+mov ebx, 1
+cmp eax, 1
+jle end_fact
+
+45
+mov ecx, eax
+dec eax
+call fact
+
+45
+mul ebx, ecx
+pop ebp
+pop ecx
+pop eax
+ret 
+
+10
+pop ebp
+pop ecx
+pop eax
+ret 
+
+1
+mov eax, 0
+inc eax
+call fact
+
+9
+inc eax
+call fact
+
+10
 prn ebx
-cmp eax, 0
-jl end
-
-line_num 5's frequency: 23
-add eax, ebx
-add ebx, eax
-prn eax
-prn ebx
-cmp eax, 0
-jl end
-
-line_num 13's frequency: 23
-cmp ebx, 0
-jg loop
-
-line_num 17's frequency: 1
+cmp eax, 10
+jl loop
 

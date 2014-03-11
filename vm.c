@@ -456,8 +456,7 @@ int main(int argc, char *argv[]) {
         
         // iterate through linked list in table[i] starting w/ head
         while (list != NULL) {
-            fprintf(ofp, "line_num %d's frequency: %d\n", list->address,
-                   list->value);
+            fprintf(ofp, "%d\n", list->value);
             dbb_exec_count2 = dbb_exec_count2 + list->value;
             
             // reset ifp and read input again to print inst. & args
@@ -526,8 +525,6 @@ int main(int argc, char *argv[]) {
         } // end iteration through linked list
     } // end iteration through hashtable array
 
-    printf("dbb_exec_count:  %d\n", dbb_exec_count);
-    printf("dbb_exec_count2: %d\n", dbb_exec_count2);
 
 
     // wrap it up
