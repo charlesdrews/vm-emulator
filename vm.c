@@ -150,9 +150,9 @@ int main(int argc, char *argv[]) {
     }
 
     // open specified input file; check if successful
-    FILE *fp;
-    fp = fopen(argv[1], "r");
-    if (fp == NULL) {
+    FILE *ifp;
+    ifp = fopen(argv[1], "r");
+    if (ifp == NULL) {
         perror("Error");
         exit(1);
     }
@@ -205,16 +205,16 @@ int main(int argc, char *argv[]) {
 	registers->remreg = 0;
 
     // find labels in input file
-    int linenum = 0; 
+    int line_num = 0; 
     char line[MAXLINE];
     char *token;
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        linenum++;
+    while (fgets(line, MAXLINE, ifp) != NULL) {
+        line_num++;
         token = strtok(line, " ,\t\n");
         while (token != NULL) {
             if (token[strlen(token) - 1] == ':') {
                 // if token is a label, add to label hash table
-                update_label(token, linenum, label_hashtab);
+                update_label(token, line_num, label_hashtab);
                 break;
             }
             token = strtok(NULL, " ,\t\n"); // move to next token
@@ -222,32 +222,32 @@ int main(int argc, char *argv[]) {
     }
 
     // if start label present, start there; otherwise line 1
-    int startline = 1;
+    int start_line = 1;
     label_list_t *lp;
     if ((lp = lookup_label("start:", label_hashtab)) != NULL)
-        startline = lp->line_num; // if found in table, update startline
+        start_line = lp->line_num; // if found in table, update start_line
 
-    rewind(fp); // reset file pointer to beginning of input file
+    rewind(ifp); // reset file pointer to beginning of input file
 
     // read input by iterating through lines of input file
-    linenum = 0;
+    line_num = 0;
     struct code_line curr_inst;
     int jump_flag = 1; // capture first block
     int dbb_exec_count = 0;
     address_list_t *dbb = NULL;
-    while (fgets(line, MAXLINE, fp) != NULL) {
-        if (++linenum >= startline) {
+    while (fgets(line, MAXLINE, ifp) != NULL) {
+        if (++line_num >= start_line) {
 
             // if previous inst. was a jump or call, need to 
             // log the current inst. as the head of a DBB
             if (jump_flag) {
-                //printf("jumped to line %d\n", linenum);
+                //printf("jumped to line %d\n", line_num);
                 
                 // use functions intended for address hashtab
-                if ((dbb = lookup_address(linenum, DBB_hashtab)) == NULL) {
-                    // if that linenum hasn't already been the
+                if ((dbb = lookup_address(line_num, DBB_hashtab)) == NULL) {
+                    // if that line_num hasn't already been the
                     // start of a DBB, add it w/ a zero value
-                    dbb = update_address(linenum, 0, DBB_hashtab);
+                    dbb = update_address(line_num, 0, DBB_hashtab);
                 }
                 dbb->value = dbb->value + 1;
                 dbb_exec_count++;
@@ -296,22 +296,22 @@ int main(int argc, char *argv[]) {
             else if (strcmp(curr_inst.inst, "popf") == 0)
                 popf(curr_inst.arg0, address_hashtab, stack, registers);
             else if (strcmp(curr_inst.inst, "call") == 0) {
-                // send linenum + 1 which would be the next
+                // send line_num + 1 which would be the next
                 // instruction, which is what SPC would point to
-                startline = call(curr_inst.arg0, linenum + 1,
+                start_line = call(curr_inst.arg0, line_num + 1,
                                  label_hashtab, stack);
                 // reset file ptr so next loop won't
-                // do anything until it hits the new startline
-                rewind(fp);
-                linenum = 0;
+                // do anything until it hits the new start_line
+                rewind(ifp);
+                line_num = 0;
                 jump_flag = 1;
             }
             else if (strcmp(curr_inst.inst, "ret") == 0) {
-                startline = ret(stack);
+                start_line = ret(stack);
                 // reset file ptr so next loop won't
-                // do anything until it hits the new startline
-                rewind(fp); 
-                linenum = 0;
+                // do anything until it hits the new start_line
+                rewind(ifp); 
+                line_num = 0;
                 jump_flag = 1;
             }
             else if (strcmp(curr_inst.inst, "inc") == 0)
@@ -356,108 +356,116 @@ int main(int argc, char *argv[]) {
                 cmp(curr_inst.arg0, curr_inst.arg1, address_hashtab,
                     registers);
             else if (strcmp(curr_inst.inst, "jmp") == 0) {
-                startline = jmp(curr_inst.arg0, linenum + 1, address_hashtab,
+                start_line = jmp(curr_inst.arg0, line_num + 1, address_hashtab,
                                 label_hashtab, registers);
                 // reset file ptr so next loop won't
-                // do anything until it hits the new startline
-                rewind(fp);
-                linenum = 0;
+                // do anything until it hits the new start_line
+                rewind(ifp);
+                line_num = 0;
                 jump_flag = 1;
             }
             else if (strcmp(curr_inst.inst, "je") == 0) {
                 if (registers->flags == 0) {
                     // jump if cmp yielded 0
-                    startline = jmp(curr_inst.arg0, linenum + 1,
+                    start_line = jmp(curr_inst.arg0, line_num + 1,
                                     address_hashtab, label_hashtab,
                                     registers);
-                    rewind(fp);
-                    linenum = 0;
+                    rewind(ifp);
+                    line_num = 0;
                 }
                 jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "jne") == 0) {
                 if (registers->flags != 0) {
                     // jump if cmp did not yield 0
-                    startline = jmp(curr_inst.arg0, linenum + 1,
+                    start_line = jmp(curr_inst.arg0, line_num + 1,
                                     address_hashtab, label_hashtab,
                                     registers);
-                    rewind(fp);
-                    linenum = 0;
+                    rewind(ifp);
+                    line_num = 0;
                 }
                 jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "jg") == 0) {
                 if (registers->flags > 0) {
                     // jump if cmp yielded >0
-                    startline = jmp(curr_inst.arg0, linenum + 1,
+                    start_line = jmp(curr_inst.arg0, line_num + 1,
                                     address_hashtab, label_hashtab,
                                     registers);
-                    rewind(fp);
-                    linenum = 0;
+                    rewind(ifp);
+                    line_num = 0;
                 }
                 jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "jge") == 0) {
                 if (registers->flags >= 0) {
                     // jump if cmp yielded >=0
-                    startline = jmp(curr_inst.arg0, linenum + 1,
+                    start_line = jmp(curr_inst.arg0, line_num + 1,
                                     address_hashtab, label_hashtab,
                                     registers);
-                    rewind(fp);
-                    linenum = 0;
+                    rewind(ifp);
+                    line_num = 0;
                 }
                 jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "jl") == 0) {
                 if (registers->flags < 0) {
                     // jump if cmp yielded <0
-                    startline = jmp(curr_inst.arg0, linenum + 1,
+                    start_line = jmp(curr_inst.arg0, line_num + 1,
                                     address_hashtab, label_hashtab,
                                     registers);
-                    rewind(fp);
-                    linenum = 0;
+                    rewind(ifp);
+                    line_num = 0;
                 }
                 jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "jle") == 0) {
                 if (registers->flags <= 0) {
                     // jump if cmp yielded <=0
-                    startline = jmp(curr_inst.arg0, linenum + 1,
+                    start_line = jmp(curr_inst.arg0, line_num + 1,
                                     address_hashtab, label_hashtab,
                                     registers);
-                    rewind(fp);
-                    linenum = 0;
+                    rewind(ifp);
+                    line_num = 0;
                 }
                 jump_flag = 1; // set jump flag even if jump didn't happen
             }
             else if (strcmp(curr_inst.inst, "prn") == 0)
                 prn(curr_inst.arg0, address_hashtab, registers);
 
-        } // end if linenum >= startline
+        } // end if line_num >= start_line
     } // end while loop through lines w/ fgets
 
 
     // display profiling data from DBB_hashtab
+
+    // open output file; check if successful
+    FILE *ofp;
+    ofp = fopen("profile.txt", "w");
+    if (ofp == NULL) {
+        perror("Error");
+        exit(1);
+    }
+    
+    // iterate through the table array
     int i;
     address_list_t *list;
     int dbb_exec_count2 = 0;
-    
-    // iterate through the table array
     for (i = 0; i < DBB_hashtab->size; i++) {
         list = DBB_hashtab->table[i];
         
         // iterate through linked list in table[i] starting w/ head
         while (list != NULL) {
-            printf("line_num %d's frequency: %d\n", list->address,
+            fprintf(ofp, "line_num %d's frequency: %d\n", list->address,
                    list->value);
             dbb_exec_count2 = dbb_exec_count2 + list->value;
             
-            // reset fp and read input again to print inst. & args
-            rewind(fp); 
-            linenum = 0;
-            startline = list->address;
-            while (fgets(line, MAXLINE, fp) != NULL) {
-                if (++linenum >= startline) {
+            // reset ifp and read input again to print inst. & args
+            rewind(ifp); 
+            line_num = 0;
+            start_line = list->address;
+            while (fgets(line, MAXLINE, ifp) != NULL) {
+                if (++line_num >= start_line) {
                     // reset curr_inst
                     memset(curr_inst.inst, '\0', 5);
                     memset(curr_inst.arg0, '\0', MAXLINE);
@@ -488,11 +496,11 @@ int main(int argc, char *argv[]) {
                     
                     if (curr_inst.inst[0] != '\0') {
                         if (curr_inst.arg1[0] != '\0')
-                            printf("%s %s, %s\n", curr_inst.inst,
-                                   curr_inst.arg0, curr_inst.arg1);
+                            fprintf(ofp, "%s %s, %s\n", curr_inst.inst,
+                                    curr_inst.arg0, curr_inst.arg1);
                         else
-                            printf("%s %s\n", curr_inst.inst,
-                                   curr_inst.arg0);
+                            fprintf(ofp, "%s %s\n", curr_inst.inst,
+                                    curr_inst.arg0);
                     }
 
                     if (strcmp(curr_inst.inst, "call") == 0 ||
@@ -504,14 +512,17 @@ int main(int argc, char *argv[]) {
                         strcmp(curr_inst.inst, "jge") == 0 ||
                         strcmp(curr_inst.inst, "jl") == 0 ||
                         strcmp(curr_inst.inst, "jle") == 0) {
-                        rewind(fp); 
-                        linenum = 0;
+                        rewind(ifp); 
+                        line_num = 0;
                         break;
                     }
-
-                } // end if linenum >= startline
+                
+                } // end if line_num >= start_line
             } // end while loop through lines w/ fgets
+            
             list = list->next;
+            fprintf(ofp, "\n"); 
+        
         } // end iteration through linked list
     } // end iteration through hashtable array
 
@@ -520,7 +531,8 @@ int main(int argc, char *argv[]) {
 
 
     // wrap it up
-    fclose(fp);
+    fclose(ifp);
+    fclose(ofp);
     free_label_hashtab(label_hashtab);
     free_address_hashtab(address_hashtab);
     free_address_hashtab(DBB_hashtab);
@@ -970,7 +982,7 @@ void popf(char *arg, address_hashtab_t *ht, stack_t *s,
 }
 
 int call(char *arg, int SPC, label_hashtab_t *ht, stack_t *s) {
-    // push current address (SPC / linenum) to stack
+    // push current address (SPC / line_num) to stack
     push_onto_stack(s, SPC);
     // lookup label specified in arg 
     // labels include : in hash table, so concatenate a : before lookup	
@@ -984,7 +996,7 @@ int call(char *arg, int SPC, label_hashtab_t *ht, stack_t *s) {
 }
 
 int ret(stack_t *s) {
-    // pop previous address (SPC / linenum) from stck
+    // pop previous address (SPC / line_num) from stck
     // resume interpretation there
     return pop_from_stack(s);
 }
