@@ -1,5 +1,9 @@
-Check the Git tags to find the version that was handed in on 3/4/14.
-It can be found on the master branch with tag v1.0.
+Charles Drews (csd305@nyu.edu, N11539474)
+Homework 3
+Virtual Machines: Concepts and Applications , CSCI-GA.3033-015, Spring 2014
 
-There are later commits that incorporate/fix features that
-were missing in v1.0 (not good, I know).
+My source code is in vm.c and can be compiled simply with "gcc vm.c -o vm".
+
+The usage is "./vm inputfile.vm".
+
+Profiling statistic will be written to profile.txt, which will be overwritten if it already exists.
