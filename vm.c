@@ -163,6 +163,12 @@ int main(int argc, char *argv[]) {
     // create hash table for memory addresses used in input code
     address_hashtab_t *address_hashtab = create_address_hashtab();
     
+    // use the address hash table type to create a hash table
+    // to capture how many times each dynamic basic block is
+    // executed. Use line_num of first inst. of DBB as address
+    // and keep track of execution count in value.
+    address_hashtab_t *DBB_hashtab = create_address_hashtab();
+     
     // create a pointer to a stack (ptr to head once items are pushed)
     stack_t *stack;
     if ((stack = malloc(sizeof(stack_t))) == NULL) {
@@ -226,14 +232,25 @@ int main(int argc, char *argv[]) {
     // read input by iterating through lines of input file
     linenum = 0;
     struct code_line curr_inst;
-    int jump_flag = 0; // 1 = the previous inst. was a jump or call
+    int jump_flag = 1; // capture first block
+    int dbb_exec_count = 0;
+    address_list_t *dbb = NULL;
     while (fgets(line, MAXLINE, fp) != NULL) {
         if (++linenum >= startline) {
 
             // if previous inst. was a jump or call, need to 
             // log the current inst. as the head of a DBB
             if (jump_flag) {
-                printf("jumped to line %d\n", linenum);
+                //printf("jumped to line %d\n", linenum);
+                
+                // use functions intended for address hashtab
+                if ((dbb = lookup_address(linenum, DBB_hashtab)) == NULL) {
+                    // if that linenum hasn't already been the
+                    // start of a DBB, add it w/ a zero value
+                    dbb = update_address(linenum, 0, DBB_hashtab);
+                }
+                dbb->value = dbb->value + 1;
+                dbb_exec_count++;
             }
             jump_flag = 0; // reset
 
@@ -419,10 +436,31 @@ int main(int argc, char *argv[]) {
         } // end if linenum >= startline
     } // end while loop through lines w/ fgets
 
+
+    // display profiling data from DBB_hashtab
+    int i;
+    address_list_t *list;
+    int dbb_exec_count2 = 0;
+    // iterate through the table array
+    for (i = 0; i < DBB_hashtab->size; i++) {
+        list = DBB_hashtab->table[i];
+        // iterate through linked list in table[i] starting w/ head
+        while (list != NULL) {
+            printf("line_num %d's frequency: %d\n", list->address,
+                   list->value);
+            dbb_exec_count2 = dbb_exec_count2 + list->value;
+            list = list->next;
+        }
+    }
+    printf("dbb_exec_count:  %d\n", dbb_exec_count);
+    printf("dbb_exec_count2: %d\n", dbb_exec_count2);
+
+
     // wrap it up
     fclose(fp);
     free_label_hashtab(label_hashtab);
     free_address_hashtab(address_hashtab);
+    free_address_hashtab(DBB_hashtab);
     free_stack(stack);
     free(stack);
     free(registers);
@@ -523,8 +561,8 @@ void free_label_hashtab(label_hashtab_t *ht) {
 
     // iterate through ht's table array
     for (i = 0; i < ht->size; i++) {
-        // iterate through linked list in table[i] starting w/ head
         list = ht->table[i];
+        // iterate through linked list in table[i] starting w/ head
         while (list != NULL) {
             temp = list;
             list = list->next;
@@ -621,8 +659,8 @@ void free_address_hashtab(address_hashtab_t *ht) {
 
     // iterate through ht's table array
     for (i = 0; i < ht->size; i++) {
-        // iterate through linked list in table[i] starting w/ head
         list = ht->table[i];
+        // iterate through linked list in table[i] starting w/ head
         while (list != NULL) {
             temp = list;
             list = list->next;
